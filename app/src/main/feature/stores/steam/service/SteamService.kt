@@ -2320,7 +2320,7 @@ class SteamService : Service() {
             val snapshotJson = withWnSession { s ->
                 withContext(Dispatchers.IO) { s.getLibrarySnapshotJson() }
             }
-if (snapshotJson != null) {
+            if (snapshotJson != null) {
                 val ownedApps = try {
                     JSONObject(snapshotJson).optJSONArray("owned_apps")
                 } catch (_: Exception) { null }
@@ -2367,17 +2367,6 @@ if (snapshotJson != null) {
                             dlcIds.add(id)
                             byId.putIfAbsent(id, knownNames[id]?.name ?: "")
                         }
-                    }
-                }
-                Timber.i("Force DLC enabled for app $appId — pushing ${dlcIds.size} DLC(s) to libsteamclient.so")
-            }
-            if (forceDlc) {
-                // Force DLC: unlock every known DLC for this app regardless of what the
-                // Steam library snapshot says is owned (mirrors GameNative's unlock_all=1).
-                getSelectableDlcAppsOf(appId).orEmpty().forEach { dlcApp ->
-                    if (!dlcIds.contains(dlcApp.id)) {
-                        dlcIds.add(dlcApp.id)
-                        byId.putIfAbsent(dlcApp.id, dlcApp.name)
                     }
                 }
                 Timber.i("Force DLC enabled for app $appId — pushing ${dlcIds.size} DLC(s) to libsteamclient.so")
