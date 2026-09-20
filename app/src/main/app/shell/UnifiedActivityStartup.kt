@@ -321,6 +321,24 @@ internal fun UnifiedActivity.handleSettingsIntent(intent: Intent?) {
 
 internal fun UnifiedActivity.maybeForwardFrontendLaunch(): Boolean {
     val source = intent ?: return false
+
+    // GameNative frontend launch protocol (Beacon, etc.): app.gamenative.LAUNCH_GAME
+    // action with app_id/game_source extras, or gamenative://run?appid=..&gamesource=..
+    if (source.action == "app.gamenative.LAUNCH_GAME" ||
+        (source.action == Intent.ACTION_VIEW &&
+            source.data?.scheme?.equals("gamenative", ignoreCase = true) == true &&
+            source.data?.host?.equals("run", ignoreCase = true) == true)
+    ) {
+        android.util.Log.d("FrontendLaunch", "GameNative launch intent: action=${source.action} data=${source.dataString} app_id=${source.getIntExtra("app_id", -1)} game_source=${source.getStringExtra("game_source")}")
+        val shortcut = resolveGameNativeShortcut(source) ?: run {
+            android.util.Log.w("FrontendLaunch", "GameNative launch: no matching shortcut found")
+            return false
+        }
+        android.util.Log.d("FrontendLaunch", "GameNative launch resolved to: ${shortcut.file.absolutePath}")
+        forwardToGame(shortcut)
+        return true
+    }
+
     val path = resolveIncomingDesktopPath(source) ?: return false
     startActivity(
         Intent(this, XServerDisplayActivity::class.java).apply {
@@ -331,6 +349,50 @@ internal fun UnifiedActivity.maybeForwardFrontendLaunch(): Boolean {
     )
     finish()
     return true
+}
+
+private fun UnifiedActivity.forwardToGame(shortcut: com.winlator.cmod.runtime.container.Shortcut) {
+    startActivity(
+        Intent(this, XServerDisplayActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            putExtra("container_id", shortcut.container.id)
+            putExtra("shortcut_path", shortcut.file.absolutePath)
+            putExtra("shortcut_name", shortcut.name)
+            putExtra("shortcut_uuid", shortcut.getExtra("uuid"))
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        },
+    )
+    finish()
+}
+
+private fun UnifiedActivity.resolveGameNativeShortcut(source: Intent): com.winlator.cmod.runtime.container.Shortcut? {
+    val appId = source.getIntExtra("app_id", 0).takeIf { it > 0 }
+    val gameSource = source.getStringExtra("game_source")?.uppercase()
+    if (appId != null && !gameSource.isNullOrEmpty()) {
+        runCatching {
+            com.winlator.cmod.runtime.container.ContainerManager(this).loadShortcuts()
+                .firstOrNull { sc ->
+                    sc.getExtra("game_source").equals(gameSource, ignoreCase = true) &&
+                        sc.getExtra("app_id") == appId.toString()
+                }
+        }.getOrNull()?.let { return it }
+    }
+    // gamenative://run?appid=X&gamesource=STEAM fallback
+    val uri = source.data
+    if (source.action == Intent.ACTION_VIEW && uri != null && uri.scheme?.equals("gamenative", ignoreCase = true) == true) {
+        val uriAppId = uri.getQueryParameter("appid")?.toIntOrNull()
+        val uriSource = uri.getQueryParameter("gamesource")?.uppercase()
+        if (uriAppId != null && !uriSource.isNullOrEmpty()) {
+            runCatching {
+                com.winlator.cmod.runtime.container.ContainerManager(this).loadShortcuts()
+                    .firstOrNull { sc ->
+                        sc.getExtra("game_source").equals(uriSource, ignoreCase = true) &&
+                            sc.getExtra("app_id") == uriAppId.toString()
+                    }
+            }.getOrNull()?.let { return it }
+        }
+    }
+    return null
 }
 
 internal fun UnifiedActivity.resolveIncomingDesktopPath(source: Intent): String? {
