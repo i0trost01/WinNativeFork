@@ -2305,7 +2305,7 @@ class SteamService : Service() {
             Timber.w(e, "pushAppInstalledDepotsToLibSteamClient failed (appId=$appId)")
         }
 
-        suspend fun pushAppDlcsToLibSteamClient(appId: Int, forceDlc: Boolean = false) = runCatching {
+        suspend fun pushAppDlcsToLibSteamClient(appId: Int) = runCatching {
             if (appId <= 0) return@runCatching
             val selectedBranch = resolveSelectedBetaName(appId).ifBlank { STEAM_DEFAULT_BRANCH }
             val localBuildId = resolveInstalledBuildId(appId, selectedBranch)
@@ -2523,10 +2523,10 @@ class SteamService : Service() {
         }
 
         @JvmStatic
-        fun prepareLibSteamClientForLaunchBlocking(appId: Int, forceDlc: Boolean = false) {
-            runBlocking { prepareLibSteamClientForLaunch(appId, forceDlc) }
+        fun prepareLibSteamClientForLaunchBlocking(appId: Int) {
+            runBlocking { prepareLibSteamClientForLaunch(appId) }
         }
-        suspend fun prepareLibSteamClientForLaunch(appId: Int, forceDlc: Boolean = false) {
+        suspend fun prepareLibSteamClientForLaunch(appId: Int) {
             if (appId <= 0) return
             startOverlayPollLoop()
             val selectedBranch = resolveSelectedBetaName(appId)
@@ -2569,7 +2569,7 @@ class SteamService : Service() {
                         }
                 }
                 val dlcJob = async {
-                    runCatching { pushAppDlcsToLibSteamClient(appId, forceDlc); true }
+                    runCatching { pushAppDlcsToLibSteamClient(appId); true }
                         .getOrElse { e ->
                             Timber.w(e, "prepareLibSteamClientForLaunch: DLC push failed for app $appId")
                             false
