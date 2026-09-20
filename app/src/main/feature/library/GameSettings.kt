@@ -554,6 +554,7 @@ class GameSettingsStateHolder {
     val useLegacyLauncher = mutableStateOf(false)
     val useSteamInput = mutableStateOf(false)
     val steamOfflineMode = mutableStateOf(false)
+    val forceDlc = mutableStateOf(false)
     val runtimePatcher = mutableStateOf(false)
 
     // Components
@@ -3736,6 +3737,20 @@ private fun SteamSection(state: GameSettingsStateHolder) {
         Spacer(Modifier.height(4.dp))
         Text(
             stringResource(R.string.shortcuts_properties_steam_offline_mode_description),
+            color = TextDim,
+            fontSize = 11.sp,
+            lineHeight = 16.sp
+        )
+        Spacer(Modifier.height(SettingItemGap))
+
+        SettingCheckbox(
+            label = "Force DLC",
+            checked = state.forceDlc.value,
+            onCheckedChange = { state.forceDlc.value = it }
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Report all DLC as owned/unlocked to the game (writes unlock_all=1 to the Goldberg steam_settings config).",
             color = TextDim,
             fontSize = 11.sp,
             lineHeight = 16.sp

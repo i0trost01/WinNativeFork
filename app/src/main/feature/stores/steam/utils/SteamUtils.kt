@@ -1389,6 +1389,7 @@ object SteamUtils {
         language: String = "english",
         isOffline: Boolean = false,
         useSteamInput: Boolean = false,
+        forceDlc: Boolean = false,
         ticketBase64: String? = null,
     ) {
         try {
@@ -1468,7 +1469,7 @@ object SteamUtils {
                     appendLine("branch_name=public")
                     appendLine()
                     appendLine("[app::dlcs]")
-                    appendLine("unlock_all=0")
+                    appendLine("unlock_all=${if (forceDlc) 1 else 0}")
                     dlcIds?.sorted()?.forEach {
                         appendLine("$it=dlc$it")
                         appendedDlcIds.add(it)

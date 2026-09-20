@@ -7357,6 +7357,9 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
             boolean useSteamInput = parseBoolean(
                     getShortcutSetting("useSteamInput",
                             container.getExtra("useSteamInput", "0")));
+            boolean forceDlc = parseBoolean(
+                    getShortcutSetting("forceDlc",
+                            container.getExtra("forceDlc", "0")));
             boolean unpackFiles = parseBoolean(
                     getShortcutSetting("unpackFiles",
                             container.isUnpackFiles() ? "1" : "0"));
@@ -7407,9 +7410,9 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
 
                 File steamDir = new File(container.getRootDir(), ".wine/drive_c/Program Files (x86)/Steam");
                 steamDir.mkdirs();
-                SteamUtils.writeCompleteSettingsDir(steamDir, appId, language, isOfflineMode, useSteamInput, ticketBase64);
+                SteamUtils.writeCompleteSettingsDir(steamDir, appId, language, isOfflineMode, useSteamInput, forceDlc, ticketBase64);
                 SteamUtils.enrichSteamSettings(this, appId, new File(steamDir, "steam_settings"));
-                setupSteamSettingsForAllDirs(gameDir, appId, language, isOfflineMode, useSteamInput, ticketBase64);
+                setupSteamSettingsForAllDirs(gameDir, appId, language, isOfflineMode, useSteamInput, forceDlc, ticketBase64);
 
                 File steamappsDir = new File(steamDir, "steamapps");
                 new File(steamappsDir, "common").mkdirs();
@@ -7531,7 +7534,7 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
                 if (!MarkerUtils.INSTANCE.hasMarker(gameInstallPath, Marker.STEAM_DLL_REPLACED)) {
                     MarkerUtils.INSTANCE.removeMarker(gameInstallPath, Marker.STEAM_DLL_RESTORED);
 
-                    replaceSteamApiDlls(gameDir, gameInstallPath, language, isOfflineMode, useSteamInput, ticketBase64);
+                    replaceSteamApiDlls(gameDir, gameInstallPath, language, isOfflineMode, useSteamInput, forceDlc, ticketBase64);
 
                     if (unpackFiles) {
                         SteamUtils.restoreUnpackedExecutable(this, appId);
@@ -7550,10 +7553,10 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
                         Log.w("XServerDisplayActivity",
                                 "STEAM_DLL_REPLACED marker set but no steam_api DLL found — clearing marker and re-injecting");
                         MarkerUtils.INSTANCE.removeMarker(gameInstallPath, Marker.STEAM_DLL_REPLACED);
-                        replaceSteamApiDlls(gameDir, gameInstallPath, language, isOfflineMode, useSteamInput, ticketBase64);
+                        replaceSteamApiDlls(gameDir, gameInstallPath, language, isOfflineMode, useSteamInput, forceDlc, ticketBase64);
                         MarkerUtils.INSTANCE.addMarker(gameInstallPath, Marker.STEAM_DLL_REPLACED);
                     } else {
-                        setupSteamSettingsForAllDirs(gameDir, appId, language, isOfflineMode, useSteamInput, ticketBase64);
+                        setupSteamSettingsForAllDirs(gameDir, appId, language, isOfflineMode, useSteamInput, forceDlc, ticketBase64);
                     }
                     SteamUtils.enrichSteamSettings(this, appId,
                             new File(gameInstallPath, "steam_settings"));
@@ -11296,7 +11299,7 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
     }
 
     private void injectSteamApiIfMissing(File gameDir, String appDirPath, String language,
-            boolean isOffline, boolean useSteamInput, String ticketBase64, java.util.List<String> backupPaths) {
+            boolean isOffline, boolean useSteamInput, boolean forceDlc, String ticketBase64, java.util.List<String> backupPaths) {
         Log.w("XServerDisplayActivity", "No steam_api DLLs found in game directory — injecting Goldberg steam_api next to game exe");
         try {
             String exePath = resolveShortcutSteamExecutablePath(getCanonicalPathOrAbsolute(gameDir));
@@ -11388,13 +11391,13 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
                         
                         SteamUtils.writeCompleteSettingsDir(gameSteamDir,
                                 Integer.parseInt(shortcut.getExtra("app_id")),
-                                language, isOffline, useSteamInput, ticketBase64);
+                                language, isOffline, useSteamInput, forceDlc, ticketBase64);
                     }
                 }
 
                 SteamUtils.writeCompleteSettingsDir(exeDir,
                         Integer.parseInt(shortcut.getExtra("app_id")),
-                        language, isOffline, useSteamInput, ticketBase64);
+                        language, isOffline, useSteamInput, forceDlc, ticketBase64);
 
                 if (backupPaths != null && appDirPath != null) {
                     String relPath = targetDll.getAbsolutePath();
@@ -11413,16 +11416,16 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
     }
 
     private void replaceSteamApiDlls(File gameDir, String appDirPath, String language,
-            boolean isOffline, boolean useSteamInput, String ticketBase64) {
+            boolean isOffline, boolean useSteamInput, boolean forceDlc, String ticketBase64) {
         if (gameDir == null || !gameDir.exists()) return;
 
         java.util.List<String> backupPaths = new java.util.ArrayList<>();
         replaceSteamApiDllsRecursive(gameDir, appDirPath, language, isOffline,
-                useSteamInput, ticketBase64, backupPaths);
+                useSteamInput, forceDlc, ticketBase64, backupPaths);
 
         // Games without steam_api*.dll need an injected hook next to the exe.
         if (backupPaths.isEmpty()) {
-            injectSteamApiIfMissing(gameDir, appDirPath, language, isOffline, useSteamInput, ticketBase64, backupPaths);
+            injectSteamApiIfMissing(gameDir, appDirPath, language, isOffline, useSteamInput, forceDlc, ticketBase64, backupPaths);
         }
 
         if (!backupPaths.isEmpty()) {
@@ -11466,7 +11469,7 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
     }
 
     private void replaceSteamApiDllsRecursive(File dir, String appDirPath, String language,
-            boolean isOffline, boolean useSteamInput, String ticketBase64,
+            boolean isOffline, boolean useSteamInput, boolean forceDlc, String ticketBase64,
             java.util.List<String> backupPaths) {
         if (dir == null || !dir.exists()) return;
 
@@ -11534,19 +11537,19 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
         if (hasSteamDll) {
             SteamUtils.writeCompleteSettingsDir(dir,
                     Integer.parseInt(shortcut.getExtra("app_id")),
-                    language, isOffline, useSteamInput, ticketBase64);
+                    language, isOffline, useSteamInput, forceDlc, ticketBase64);
         }
 
         for (File file : files) {
             if (file.isDirectory() && !file.getName().equals("steam_settings")) {
                 replaceSteamApiDllsRecursive(file, appDirPath, language, isOffline,
-                        useSteamInput, ticketBase64, backupPaths);
+                        useSteamInput, forceDlc, ticketBase64, backupPaths);
             }
         }
     }
 
     private void setupSteamSettingsForAllDirs(File dir, int appId, String language,
-            boolean isOffline, boolean useSteamInput, String ticketBase64) {
+            boolean isOffline, boolean useSteamInput, boolean forceDlc, String ticketBase64) {
         if (dir == null || !dir.exists()) return;
 
         File[] files = dir.listFiles();
@@ -11563,12 +11566,12 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
         }
 
         if (hasSteamDll) {
-            SteamUtils.writeCompleteSettingsDir(dir, appId, language, isOffline, useSteamInput, ticketBase64);
+            SteamUtils.writeCompleteSettingsDir(dir, appId, language, isOffline, useSteamInput, forceDlc, ticketBase64);
         }
 
         for (File file : files) {
             if (file.isDirectory() && !file.getName().equals("steam_settings")) {
-                setupSteamSettingsForAllDirs(file, appId, language, isOffline, useSteamInput, ticketBase64);
+                setupSteamSettingsForAllDirs(file, appId, language, isOffline, useSteamInput, forceDlc, ticketBase64);
             }
         }
     }

@@ -178,7 +178,7 @@ android {
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.winnative.cmod"
+        applicationId "com.winnative.cmod.fork"
         minSdk 26
         targetSdk 28
         versionCode appVersionCode
@@ -261,7 +261,7 @@ android {
     productFlavors {
         standard {
             dimension "branding"
-            applicationId "com.winnative.cmod"
+            applicationId "com.winnative.cmod.fork"
         }
         ludashi {
             dimension "branding"
