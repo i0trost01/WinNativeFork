@@ -12884,12 +12884,9 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
                                         + " appId=" + appId);
                         com.winlator.cmod.feature.stores.steam.wnsteam
                                 .WnLibSteamClient.INSTANCE.setAppId(appId);
-                        boolean bsForceDlc = parseBoolean(
-                                getShortcutSetting("forceDlc",
-                                        container.getExtra("forceDlc", "0")));
                         try {
                             com.winlator.cmod.feature.stores.steam.service.SteamService
-                                    .prepareLibSteamClientForLaunchBlocking(appId, bsForceDlc);
+                                    .prepareLibSteamClientForLaunchBlocking(appId);
                         } catch (Throwable t) {
                             Log.w("XServerDisplayActivity",
                                     "Bionic Steam: prepareLibSteamClientForLaunch failed for app "
