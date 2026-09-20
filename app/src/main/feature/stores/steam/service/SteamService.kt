@@ -297,7 +297,7 @@ class SteamService : Service() {
     companion object {
         const val MAX_PICS_BUFFER = 256
 
-        const val MAX_RETRY_ATTEMPTS = 20
+        const val MAX_RETRY_ATTEMPTS = 1
 
         // Session must stay logged on this long before its reconnect counts as successful and resets the retry budget.
         private const val STABLE_CONNECTION_MS = 60_000L
@@ -306,7 +306,7 @@ class SteamService : Service() {
         internal const val RECONNECT_BACKOFF_CAP_MS = 5 * 60_000L
 
         // connectAndLogon gives up after this many consecutive failed bring-up attempts (exponential backoff) instead of retrying a doomed logon forever.
-        internal const val CONNECT_LOGON_MAX_ATTEMPTS = 8
+        internal const val CONNECT_LOGON_MAX_ATTEMPTS = 1
 
         internal const val REFRESH_TOKEN_ROTATION_THRESHOLD_DAYS = 7
         internal const val REFRESH_TOKEN_ROTATION_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
