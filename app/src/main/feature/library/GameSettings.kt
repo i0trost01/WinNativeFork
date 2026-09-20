@@ -3781,8 +3781,7 @@ private fun SteamSection(state: GameSettingsStateHolder) {
         )
         Spacer(Modifier.height(SettingItemGap))
 
-        // Use Steam Input — hidden in the UI for now (state/persistence kept intact).
-        /*
+        // Use Steam Input — per-game toggle; drives SteamUtils controller config generation.
         SettingCheckbox(
             label = stringResource(R.string.shortcuts_properties_use_steam_input),
             checked = state.useSteamInput.value,
@@ -3791,8 +3790,14 @@ private fun SteamSection(state: GameSettingsStateHolder) {
                 if (it) state.steamLauncher.value = false
             }
         )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(R.string.shortcuts_properties_use_steam_input_description),
+            color = TextDim,
+            fontSize = 11.sp,
+            lineHeight = 16.sp
+        )
         Spacer(Modifier.height(SettingItemGap))
-        */
 
         SettingCheckbox(
             label = stringResource(R.string.shortcuts_properties_runtime_patcher),

@@ -82,6 +82,12 @@ public final class FrontendExporter {
 
       File out = new File(dir, baseName + ".desktop");
       FileUtils.writeString(out, buildDesktopContent(shortcut.file, iconPath, resolvedName));
+      // Also write the GameNative-format export file (e.g. <Name>.steam containing the
+      // numeric appid). Beacon's GameNative integration scans for these extensions and
+      // reads the appid out of the file to build its launch intent — it does not parse
+      // .desktop files. Without this companion file Beacon can list a game but cannot
+      // launch it, so it falls back to opening the app.
+      writeGameNativeExport(shortcut, dir, baseName);
       return out;
     } catch (Exception e) {
       Log.e(TAG, "Failed to export shortcut: " + shortcut.name, e);
@@ -113,6 +119,43 @@ public final class FrontendExporter {
     String safe = name.replaceAll("[\\\\/:*?\"<>|]", "_").replaceAll("[\\x00-\\x1F]", "");
     safe = safe.replaceAll("[ .]+$", "");
     return safe.isEmpty() ? "game" : safe;
+  }
+
+  /**
+   * Writes the GameNative-format frontend file next to the .desktop export. GameNative
+   * (and Beacon, which supports it natively) exports one file per game whose extension
+   * identifies the store and whose whole content is the numeric app id, e.g.
+   * {@code "Counter-Strike 2.steam"} containing {@code "730"}. Frontends scan these
+   * files and build a {@code gamenative://run?appid=X&gamesource=STEAM} launch.
+   * Returns the written file, or null when the shortcut carries no usable id.
+   */
+  private static File writeGameNativeExport(Shortcut shortcut, File dir, String baseName) {
+    if (shortcut == null || dir == null || baseName == null || baseName.isEmpty()) return null;
+
+    String source = shortcut.getExtra("game_source");
+    String ext;
+    String gameId;
+    if ("STEAM".equalsIgnoreCase(source)) {
+      ext = ".steam";
+      gameId = shortcut.getExtra("app_id");
+    } else if ("EPIC".equalsIgnoreCase(source)) {
+      ext = ".epic";
+      gameId = shortcut.getExtra("app_id");
+    } else if ("GOG".equalsIgnoreCase(source)) {
+      ext = ".gog";
+      gameId = shortcut.getExtra("gog_id");
+      if (gameId == null || gameId.isEmpty()) gameId = shortcut.getExtra("app_id");
+    } else {
+      // CUSTOM / retro etc. — GameNative custom games export as .pcgame with the
+      // numeric game id, but WinNative custom shortcuts have no numeric id; skip.
+      return null;
+    }
+    if (gameId == null || gameId.isEmpty()) return null;
+
+    File out = new File(dir, baseName + ext);
+    FileUtils.writeString(out, gameId);
+    Log.d(TAG, "Wrote GameNative export: " + out.getAbsolutePath() + " -> " + gameId);
+    return out;
   }
 
   private static File resolveIconFile(Context context, Shortcut shortcut) {
