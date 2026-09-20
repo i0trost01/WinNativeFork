@@ -2339,38 +2339,6 @@ class SteamService : Service() {
                 // No logged-on session and no Force DLC — nothing to report.
                 return@runCatching
             }
-            if (forceDlc) {
-                // Force DLC: unlock every known DLC for this app regardless of what the
-                // Steam library snapshot says is owned (mirrors GameNative's unlock_all=1).
-                // Collect from appinfo (listofdlc + dlc depots), the DB (downloadable/hidden
-                // DLC apps) and the full selectable list, so we never depend on a single source.
-                val knownDlcIds = mutableSetOf<Int>()
-                getAppInfoOf(appId)?.let { info ->
-                    info.dlcAppIds.forEach { id -> if (id > 0) knownDlcIds.add(id) }
-                    info.depots.values.forEach { depot ->
-                        if (depot.dlcAppId != INVALID_APP_ID && depot.dlcAppId > 0) {
-                            knownDlcIds.add(depot.dlcAppId)
-                        }
-                    }
-                }
-                getDownloadableDlcAppsOf(appId).orEmpty().forEach { knownDlcIds.add(it.id) }
-                getHiddenDlcAppsOf(appId).orEmpty().forEach { knownDlcIds.add(it.id) }
-                getSelectableDlcAppsOf(appId).orEmpty().forEach { knownDlcIds.add(it.id) }
-                if (knownDlcIds.isNotEmpty()) {
-                    val knownNames =
-                        runCatching { instance?.appDao?.findApps(knownDlcIds.toList()) }
-                            .getOrNull()
-                            .orEmpty()
-                            .associateBy { it.id }
-                    knownDlcIds.forEach { id ->
-                        if (!dlcIds.contains(id)) {
-                            dlcIds.add(id)
-                            byId.putIfAbsent(id, knownNames[id]?.name ?: "")
-                        }
-                    }
-                }
-                Timber.i("Force DLC enabled for app $appId — pushing ${dlcIds.size} DLC(s) to libsteamclient.so")
-            }
             if (parentBuildId > 0 && localBuildId <= 0) {
                 com.winlator.cmod.feature.stores.steam.wnsteam.WnLibSteamClient
                     .setAppBuildId(appId, parentBuildId)
