@@ -2305,7 +2305,7 @@ class SteamService : Service() {
             Timber.w(e, "pushAppInstalledDepotsToLibSteamClient failed (appId=$appId)")
         }
 
-        suspend fun pushAppDlcsToLibSteamClient(appId: Int) = runCatching {
+        suspend fun pushAppDlcsToLibSteamClient(appId: Int, forceDlc: Boolean = false) = runCatching {
             if (appId <= 0) return@runCatching
             val selectedBranch = resolveSelectedBetaName(appId).ifBlank { STEAM_DEFAULT_BRANCH }
             val localBuildId = resolveInstalledBuildId(appId, selectedBranch)
@@ -2367,6 +2367,17 @@ if (snapshotJson != null) {
                             dlcIds.add(id)
                             byId.putIfAbsent(id, knownNames[id]?.name ?: "")
                         }
+                    }
+                }
+                Timber.i("Force DLC enabled for app $appId — pushing ${dlcIds.size} DLC(s) to libsteamclient.so")
+            }
+            if (forceDlc) {
+                // Force DLC: unlock every known DLC for this app regardless of what the
+                // Steam library snapshot says is owned (mirrors GameNative's unlock_all=1).
+                getSelectableDlcAppsOf(appId).orEmpty().forEach { dlcApp ->
+                    if (!dlcIds.contains(dlcApp.id)) {
+                        dlcIds.add(dlcApp.id)
+                        byId.putIfAbsent(dlcApp.id, dlcApp.name)
                     }
                 }
                 Timber.i("Force DLC enabled for app $appId — pushing ${dlcIds.size} DLC(s) to libsteamclient.so")
@@ -2523,10 +2534,10 @@ if (snapshotJson != null) {
         }
 
         @JvmStatic
-        fun prepareLibSteamClientForLaunchBlocking(appId: Int) {
-            runBlocking { prepareLibSteamClientForLaunch(appId) }
+        fun prepareLibSteamClientForLaunchBlocking(appId: Int, forceDlc: Boolean = false) {
+            runBlocking { prepareLibSteamClientForLaunch(appId, forceDlc) }
         }
-        suspend fun prepareLibSteamClientForLaunch(appId: Int) {
+        suspend fun prepareLibSteamClientForLaunch(appId: Int, forceDlc: Boolean = false) {
             if (appId <= 0) return
             startOverlayPollLoop()
             val selectedBranch = resolveSelectedBetaName(appId)
@@ -2569,7 +2580,7 @@ if (snapshotJson != null) {
                         }
                 }
                 val dlcJob = async {
-                    runCatching { pushAppDlcsToLibSteamClient(appId); true }
+                    runCatching { pushAppDlcsToLibSteamClient(appId, forceDlc); true }
                         .getOrElse { e ->
                             Timber.w(e, "prepareLibSteamClientForLaunch: DLC push failed for app $appId")
                             false
