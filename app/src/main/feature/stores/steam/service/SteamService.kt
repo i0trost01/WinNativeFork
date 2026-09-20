@@ -2314,24 +2314,30 @@ class SteamService : Service() {
                     .setAppBuildId(appId, localBuildId)
                 Timber.i("Pushed installed buildId=$localBuildId to libsteamclient.so (app $appId branch=$selectedBranch)")
             }
-            val snapshotJson = withWnSession { s ->
-                withContext(Dispatchers.IO) { s.getLibrarySnapshotJson() }
-            } ?: return@runCatching
-            val ownedApps = try {
-                JSONObject(snapshotJson).optJSONArray("owned_apps") ?: return@runCatching
-            } catch (_: Exception) { return@runCatching }
-
             val dlcIds = mutableListOf<Int>()
             val byId   = mutableMapOf<Int, String>()
             var parentBuildId = 0
-            for (i in 0 until ownedApps.length()) {
-                val obj = ownedApps.optJSONObject(i) ?: continue
-                val id  = obj.optInt("id")
-                byId[id] = obj.optString("name", "")
-                if (id != appId) continue
-                parentBuildId = obj.optInt("build_id", 0)
-                val arr = obj.optJSONArray("dlc") ?: continue
-                for (k in 0 until arr.length()) dlcIds.add(arr.optInt(k))
+            val snapshotJson = withWnSession { s ->
+                withContext(Dispatchers.IO) { s.getLibrarySnapshotJson() }
+            }
+            if (snapshotJson != null) {
+                val ownedApps = try {
+                    JSONObject(snapshotJson).optJSONArray("owned_apps")
+                } catch (_: Exception) { null }
+                if (ownedApps != null) {
+                    for (i in 0 until ownedApps.length()) {
+                        val obj = ownedApps.optJSONObject(i) ?: continue
+                        val id  = obj.optInt("id")
+                        byId[id] = obj.optString("name", "")
+                        if (id != appId) continue
+                        parentBuildId = obj.optInt("build_id", 0)
+                        val arr = obj.optJSONArray("dlc") ?: continue
+                        for (k in 0 until arr.length()) dlcIds.add(arr.optInt(k))
+                    }
+                }
+            } else if (!forceDlc) {
+                // No logged-on session and no Force DLC — nothing to report.
+                return@runCatching
             }
             if (parentBuildId > 0 && localBuildId <= 0) {
                 com.winlator.cmod.feature.stores.steam.wnsteam.WnLibSteamClient
