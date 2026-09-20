@@ -555,7 +555,6 @@ class GameSettingsStateHolder {
     val useSteamInput = mutableStateOf(false)
     val steamOfflineMode = mutableStateOf(false)
     val forceDlc = mutableStateOf(false)
-    val launchBionicSteam = mutableStateOf(false)
     val runtimePatcher = mutableStateOf(false)
 
     // Components
@@ -3709,16 +3708,6 @@ private fun SteamSection(state: GameSettingsStateHolder) {
         state.steamLauncher.value = enabled
         if (enabled) {
             state.useLegacyLauncher.value = false
-            state.launchBionicSteam.value = false
-            state.runtimePatcher.value = false
-        }
-    }
-
-    val onBionicSteamChange: (Boolean) -> Unit = { enabled ->
-        state.launchBionicSteam.value = enabled
-        if (enabled) {
-            state.steamLauncher.value = false
-            state.useLegacyLauncher.value = false
             state.runtimePatcher.value = false
         }
     }
@@ -3780,27 +3769,12 @@ private fun SteamSection(state: GameSettingsStateHolder) {
                 state.useLegacyLauncher.value = it
                 if (it) {
                     state.steamLauncher.value = false
-                    state.launchBionicSteam.value = false
                 }
             }
         )
         Spacer(Modifier.height(4.dp))
         Text(
             stringResource(R.string.shortcuts_properties_use_legacy_launcher_description),
-            color = TextDim,
-            fontSize = 11.sp,
-            lineHeight = 16.sp
-        )
-        Spacer(Modifier.height(SettingItemGap))
-
-        SettingCheckbox(
-            label = "Launch Bionic Steam",
-            checked = state.launchBionicSteam.value,
-            onCheckedChange = onBionicSteamChange
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "WinNative's own Steam client emulation (libsteamclient): keeps cloud saves while allowing Force DLC. Turns off Steam Launcher (Real Client).",
             color = TextDim,
             fontSize = 11.sp,
             lineHeight = 16.sp
