@@ -800,14 +800,14 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
 
     int numControllers = getConfiguredControllerCount();
     for (int slot = 0; slot < numControllers; slot++) {
-      int vendorId = 0x1234 + slot;
-      int productId = 0x5678 + slot;
+      int vendorId = 0x045E + slot;
+      int productId = 0x028E + slot;
       int eventMinor = 64 + slot;
-      String name = "Generic HID Gamepad " + slot;
+      String name = "Xbox 360 Controller";
       File udevData = new File(udevDataDir, "c13:" + eventMinor);
       String vendor = String.format(java.util.Locale.US, "%04x", vendorId);
       String product = String.format(java.util.Locale.US, "%04x", productId);
-      String symlink = "input/by-id/usb-WinNative_Generic_HID_Gamepad_" + slot + "-event-joystick";
+      String symlink = "input/by-id/usb-Xbox_360_Controller_" + slot + "-event-joystick";
       String content =
           "I:"
               + slot
@@ -824,17 +824,17 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
               + "E:ID_INPUT=1\n"
               + "E:ID_INPUT_JOYSTICK=1\n"
               + "E:ID_BUS=usb\n"
-              + "E:ID_VENDOR=WinNative\n"
+              + "E:ID_VENDOR=Microsoft\n"
               + "E:ID_VENDOR_ID="
               + vendor
               + "\n"
-              + "E:ID_MODEL=Generic_HID_Gamepad_"
+              + "E:ID_MODEL=Xbox_360_Controller_"
               + slot
               + "\n"
               + "E:ID_MODEL_ID="
               + product
               + "\n"
-              + "E:ID_SERIAL=WinNative_Generic_HID_Gamepad_"
+              + "E:ID_SERIAL=Microsoft_Xbox_360_Controller_"
               + slot
               + "\n"
               + "E:NAME=\""
@@ -852,7 +852,7 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
         }
       }
 
-      File byIdLink = new File(byIdDir, "usb-WinNative_Generic_HID_Gamepad_" + slot + "-event-joystick");
+      File byIdLink = new File(byIdDir, "usb-Xbox_360_Controller_" + slot + "-event-joystick");
       if (!byIdLink.exists()) {
         try {
           FileUtils.symlink("../event" + slot, byIdLink.getPath());

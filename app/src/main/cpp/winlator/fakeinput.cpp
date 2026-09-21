@@ -39,10 +39,10 @@
 
 #define EXPORT __attribute__((visibility("default"))) extern "C"
 
-static constexpr uint16_t GAMEPAD_VENDOR_ID_BASE = 0x1234;
-static constexpr uint16_t GAMEPAD_PRODUCT_ID_BASE = 0x5678;
+static constexpr uint16_t GAMEPAD_VENDOR_ID_BASE = 0x045E;
+static constexpr uint16_t GAMEPAD_PRODUCT_ID_BASE = 0x028E;
 static constexpr uint16_t GAMEPAD_VERSION = 0x0110;
-static constexpr const char *GAMEPAD_NAME_TEMPLATE = "Generic HID Gamepad %d";
+static constexpr const char *GAMEPAD_NAME_TEMPLATE = "Xbox 360 Controller";
 static constexpr const char *GAMEPAD_PHYS_TEMPLATE = "usb-fakeinput/input%d";
 static constexpr const char *GAMEPAD_UNIQ_TEMPLATE = "0000000000%02d";
 static constexpr uint8_t GAMEPAD_AXIS_COUNT = 8;
