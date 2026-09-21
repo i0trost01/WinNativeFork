@@ -433,7 +433,7 @@ private fun UnifiedActivity.resolveGameNativeFile(
 ): com.winlator.cmod.runtime.container.Shortcut? {
     val ext = filePath.substringAfterLast('.', "").lowercase()
     val gameSource = when (ext) {
-        "steam" -> "STEAM"
+        "steam", "steamappid" -> "STEAM"
         "epic" -> "EPIC"
         "gog" -> "GOG"
         "pcgame" -> "CUSTOM"

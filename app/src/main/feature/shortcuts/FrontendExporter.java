@@ -154,6 +154,14 @@ public final class FrontendExporter {
 
     File out = new File(dir, baseName + ext);
     FileUtils.writeString(out, gameId);
+    // Daijisho's stock Steam platform (Steam.json) scans .steamappid files; also
+    // write the .steamappid companion so the same game is launchable from Daijisho
+    // while keeping the GameNative/Beacon-compatible extension.
+    if ("STEAM".equalsIgnoreCase(source)) {
+      File outAppId = new File(dir, baseName + ".steamappid");
+      FileUtils.writeString(outAppId, gameId);
+      Log.d(TAG, "Wrote Daijisho export: " + outAppId.getAbsolutePath() + " -> " + gameId);
+    }
     Log.d(TAG, "Wrote GameNative export: " + out.getAbsolutePath() + " -> " + gameId);
     return out;
   }
