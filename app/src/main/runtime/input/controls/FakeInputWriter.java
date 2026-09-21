@@ -9,8 +9,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 
 public class FakeInputWriter {
-  public static final short ABS_BRAKE = 10;
-  public static final short ABS_GAS = 9;
+  public static final short ABS_RZ = 5;
+  public static final short ABS_Z = 2;
   public static final short ABS_HAT0X = 16;
   public static final short ABS_HAT0Y = 17;
   public static final short ABS_RX = 3;
@@ -400,7 +400,7 @@ public class FakeInputWriter {
     }
     ring.putInt(RING_SNAPSHOT_BUTTONS_OFFSET, buttons);
     // Axis order must match the native kSnapshotAxisCodes:
-    // X, Y, RX, RY, GAS(=triggerR), BRAKE(=triggerL), HAT0X, HAT0Y.
+    // X, Y, RX, RY, RZ(=triggerR), Z(=triggerL), HAT0X, HAT0Y.
     ring.putShort(RING_SNAPSHOT_AXES_OFFSET, clampShort(this.prevThumbLX));
     ring.putShort(RING_SNAPSHOT_AXES_OFFSET + 2, clampShort(this.prevThumbLY));
     ring.putShort(RING_SNAPSHOT_AXES_OFFSET + 4, clampShort(this.prevThumbRX));
@@ -512,11 +512,11 @@ public class FakeInputWriter {
       }
       if (this.forceResend || this.prevTriggerL != 0) {
         this.prevTriggerL = 0;
-        writeEvent((short) 3, (short) 10, 0);
+        writeEvent((short) 3, (short) 2, 0);
       }
       if (this.forceResend || this.prevTriggerR != 0) {
         this.prevTriggerR = 0;
-        writeEvent((short) 3, (short) 9, 0);
+        writeEvent((short) 3, (short) 5, 0);
       }
       if (this.forceResend || this.prevHatX != 0) {
         this.prevHatX = 0;
@@ -631,11 +631,11 @@ public class FakeInputWriter {
     }
     if (this.forceResend || tl != this.prevTriggerL) {
       this.prevTriggerL = tl;
-      writeEvent((short) 3, (short) 10, tl);
+      writeEvent((short) 3, (short) 2, tl);
     }
     if (this.forceResend || tr != this.prevTriggerR) {
       this.prevTriggerR = tr;
-      writeEvent((short) 3, (short) 9, tr);
+      writeEvent((short) 3, (short) 5, tr);
     }
 
     int hatY = 1;
