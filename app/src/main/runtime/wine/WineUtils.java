@@ -1432,7 +1432,7 @@ public abstract class WineUtils {
     }
   }
 
-  private static final int LAUNCH_REGISTRY_POLICY_VERSION = 3;
+  private static final int LAUNCH_REGISTRY_POLICY_VERSION = 2;
 
   private static final String LAUNCH_REGISTRY_POLICY_EXTRA = "launchRegistryPolicy";
 
@@ -1552,19 +1552,20 @@ public abstract class WineUtils {
   public static void setJoystickRegistryKeys(
       Container container, boolean dinputEnabled, boolean exclusiveXInput) {
     File userRegFile = new File(container.getRootDir(), ".wine/user.reg");
-    // When DInput is enabled, mark the fake Xbox 360 controller as "override" so Wine's
-    // DInput HID joystick backend force-enables it and redirects to the WINEXINPUT device
-    // interface (the working XInput device) instead of the bogus &IG_ HID gamepad. When
-    // DInput is disabled (XInput only), mark it "disabled" so DInput ignores the pad.
-    // Always write the value: gating it on exclusiveXInput left both-enabled configs
-    // (XInput + DInput) with no key, which kept the DInput joystick cache empty.
     String value = dinputEnabled ? "override" : "disabled";
     try (WineRegistryEditor registryEditor = new WineRegistryEditor(userRegFile)) {
       for (int i = 0; i < 4; i++) {
-        registryEditor.setStringValue(
-            "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller " + i, value);
-        registryEditor.setStringValue(
-            "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller", value);
+        if (exclusiveXInput) {
+          registryEditor.setStringValue(
+              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller " + i, value);
+          registryEditor.setStringValue(
+              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller", value);
+        } else {
+          registryEditor.removeValue(
+              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller " + i);
+          registryEditor.removeValue(
+              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller");
+        }
       }
     }
   }
