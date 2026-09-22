@@ -1557,14 +1557,14 @@ public abstract class WineUtils {
       for (int i = 0; i < 4; i++) {
         if (exclusiveXInput) {
           registryEditor.setStringValue(
-              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller " + i, value);
+              "Software\\Wine\\DirectInput\\Joysticks", "Generic HID Gamepad " + i, value);
           registryEditor.setStringValue(
-              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller", value);
+              "Software\\Wine\\DirectInput\\Joysticks", "ric HID Gamepad " + i, value);
         } else {
           registryEditor.removeValue(
-              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller " + i);
+              "Software\\Wine\\DirectInput\\Joysticks", "Generic HID Gamepad " + i);
           registryEditor.removeValue(
-              "Software\\Wine\\DirectInput\\Joysticks", "Xbox 360 Controller");
+              "Software\\Wine\\DirectInput\\Joysticks", "ric HID Gamepad " + i);
         }
       }
     }

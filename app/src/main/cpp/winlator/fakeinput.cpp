@@ -39,10 +39,10 @@
 
 #define EXPORT __attribute__((visibility("default"))) extern "C"
 
-static constexpr uint16_t GAMEPAD_VENDOR_ID_BASE = 0x045E;
-static constexpr uint16_t GAMEPAD_PRODUCT_ID_BASE = 0x028E;
+static constexpr uint16_t GAMEPAD_VENDOR_ID_BASE = 0x1234;
+static constexpr uint16_t GAMEPAD_PRODUCT_ID_BASE = 0x5678;
 static constexpr uint16_t GAMEPAD_VERSION = 0x0110;
-static constexpr const char *GAMEPAD_NAME_TEMPLATE = "Xbox 360 Controller";
+static constexpr const char *GAMEPAD_NAME_TEMPLATE = "Generic HID Gamepad %d";
 static constexpr const char *GAMEPAD_PHYS_TEMPLATE = "usb-fakeinput/input%d";
 static constexpr const char *GAMEPAD_UNIQ_TEMPLATE = "0000000000%02d";
 static constexpr uint8_t GAMEPAD_AXIS_COUNT = 8;
@@ -120,7 +120,7 @@ static const NeutralEventSpec kNeutralEvents[] = {
     {EV_KEY, BTN_SELECT}, {EV_KEY, BTN_START},  {EV_KEY, BTN_MODE},
     {EV_KEY, BTN_THUMBL}, {EV_KEY, BTN_THUMBR}, {EV_ABS, ABS_X},
     {EV_ABS, ABS_Y},      {EV_ABS, ABS_RX},     {EV_ABS, ABS_RY},
-    {EV_ABS, ABS_RZ},     {EV_ABS, ABS_Z},      {EV_ABS, ABS_HAT0X},
+    {EV_ABS, ABS_GAS},    {EV_ABS, ABS_BRAKE},  {EV_ABS, ABS_HAT0X},
     {EV_ABS, ABS_HAT0Y},  {EV_SYN, SYN_REPORT},
 };
 static constexpr size_t kNeutralEventCount =
@@ -128,7 +128,7 @@ static constexpr size_t kNeutralEventCount =
 
 // Axis layout of FakeInputRingHeader::snapshot_axes (mirrors the Java writer).
 static const uint16_t kSnapshotAxisCodes[8] = {
-    ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_RZ, ABS_Z, ABS_HAT0X, ABS_HAT0Y};
+    ABS_X, ABS_Y, ABS_RX, ABS_RY, ABS_GAS, ABS_BRAKE, ABS_HAT0X, ABS_HAT0Y};
 // Bit i of FakeInputRingHeader::snapshot_buttons maps to this button code.
 static const uint16_t kSnapshotButtons[10] = {
     BTN_A,  BTN_B,      BTN_X,     BTN_Y,      BTN_TL,
@@ -955,8 +955,8 @@ EXPORT int ioctl(int fd, int op, ...) {
     bitmask[ABS_Y / 8] |= (1 << (ABS_Y % 8));
     bitmask[ABS_RX / 8] |= (1 << (ABS_RX % 8));
     bitmask[ABS_RY / 8] |= (1 << (ABS_RY % 8));
-    bitmask[ABS_RZ / 8] |= (1 << (ABS_RZ % 8));
-    bitmask[ABS_Z / 8] |= (1 << (ABS_Z % 8));
+    bitmask[ABS_GAS / 8] |= (1 << (ABS_GAS % 8));
+    bitmask[ABS_BRAKE / 8] |= (1 << (ABS_BRAKE % 8));
     bitmask[ABS_HAT0X / 8] |= (1 << (ABS_HAT0X % 8));
     bitmask[ABS_HAT0Y / 8] |= (1 << (ABS_HAT0Y % 8));
     return copy_ioctl_bits(op, argp, bitmask);
@@ -994,16 +994,14 @@ EXPORT int ioctl(int fd, int op, ...) {
     Logger::log("Hooking ioctl EVIOCGABS(ABS) for event %s\n", event);
     struct input_absinfo abs_info;
     memset(&abs_info, 0, sizeof(abs_info));
-    if (number == 0x42 || number == 0x45) {
-      // ABS_Z (left trigger) and ABS_RZ (right trigger) are analog 0..255,
-      // matching the real Xbox 360 xpad trigger range.
-      abs_info.value = 0;
-      abs_info.minimum = 0;
-      abs_info.maximum = 255;
-    } else if (number >= 0x40 && number <= 0x44) {
+    if (number >= 0x40 && number <= 0x44) {
       abs_info.value = 0;
       abs_info.minimum = -32768;
       abs_info.maximum = 32767;
+    } else if (number >= 0x49 && number <= 0x4A) {
+      abs_info.value = 0;
+      abs_info.minimum = 0;
+      abs_info.maximum = 255;
     } else if (number >= 0x50 && number <= 0x51) {
       abs_info.value = 0;
       abs_info.minimum = -1;

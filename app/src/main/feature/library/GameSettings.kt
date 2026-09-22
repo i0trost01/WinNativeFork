@@ -3781,7 +3781,8 @@ private fun SteamSection(state: GameSettingsStateHolder) {
         )
         Spacer(Modifier.height(SettingItemGap))
 
-        // Use Steam Input — per-game toggle; drives SteamUtils controller config generation.
+        // Use Steam Input — hidden in the UI for now (state/persistence kept intact).
+        /*
         SettingCheckbox(
             label = stringResource(R.string.shortcuts_properties_use_steam_input),
             checked = state.useSteamInput.value,
@@ -3790,14 +3791,8 @@ private fun SteamSection(state: GameSettingsStateHolder) {
                 if (it) state.steamLauncher.value = false
             }
         )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            stringResource(R.string.shortcuts_properties_use_steam_input_description),
-            color = TextDim,
-            fontSize = 11.sp,
-            lineHeight = 16.sp
-        )
         Spacer(Modifier.height(SettingItemGap))
+        */
 
         SettingCheckbox(
             label = stringResource(R.string.shortcuts_properties_runtime_patcher),
@@ -5016,6 +5011,8 @@ private fun InputSection(state: GameSettingsStateHolder) {
                         if (!enabled) {
                             state.enableXInput.value = true
                             state.enableDInput.value = true
+                        } else if (state.enableXInput.value && state.enableDInput.value) {
+                            state.enableDInput.value = false
                         }
                     }
                 )
@@ -5123,7 +5120,10 @@ private fun InputSection(state: GameSettingsStateHolder) {
                 SettingCheckbox(
                     label = stringResource(R.string.container_config_enable_xinput),
                     checked = state.enableXInput.value,
-                    onCheckedChange = { state.enableXInput.value = it },
+                    onCheckedChange = {
+                        state.enableXInput.value = it
+                        if (!inputApisLocked && it && state.enableDInput.value) state.enableDInput.value = false
+                    },
                     enabled = !inputApisLocked
                 )
             }
@@ -5177,7 +5177,10 @@ private fun InputSection(state: GameSettingsStateHolder) {
                 SettingCheckbox(
                     label = stringResource(R.string.container_config_enable_dinput),
                     checked = state.enableDInput.value,
-                    onCheckedChange = { state.enableDInput.value = it },
+                    onCheckedChange = {
+                        state.enableDInput.value = it
+                        if (!inputApisLocked && it && state.enableXInput.value) state.enableXInput.value = false
+                    },
                     enabled = !inputApisLocked
                 )
             }

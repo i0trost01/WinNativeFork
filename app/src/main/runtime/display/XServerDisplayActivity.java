@@ -626,15 +626,6 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
     private boolean autoPauseContainer;
     private static final String TAG = "XServerDisplayActivity";
 
-    // GameNative frontend launch protocol (Beacon, etc.). Mirror of GameNative's
-    // IntentLaunchManager: action app.gamenative.LAUNCH_GAME with extras
-    // app_id(int) + game_source(STEAM/EPIC/GOG/CUSTOM), or URI gamenative://run?appid=X&gamesource=STEAM.
-    private static final String GN_ACTION_LAUNCH_GAME = "app.gamenative.LAUNCH_GAME";
-    private static final String GN_URI_SCHEME = "gamenative";
-    private static final String GN_URI_HOST = "run";
-    private static final String GN_EXTRA_APP_ID = "app_id";
-    private static final String GN_EXTRA_GAME_SOURCE = "game_source";
-
     private GuestProgramLauncherComponent guestProgramLauncherComponent;
     private EnvVars overrideEnvVars;
 
@@ -1604,18 +1595,6 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
         int currentContainerId = container != null ? container.id : 0;
         String currentBootExe = bootExePath != null ? bootExePath : "";
 
-        // GameNative frontend launch while a session is already running: resolve to the
-        // shortcut and populate the comparison fields so the target switch fires normally.
-        if (isGameNativeLaunchIntent(intent)) {
-            Shortcut gnShortcut = resolveGameNativeLaunch(intent);
-            if (gnShortcut != null) {
-                incomingShortcutPath = gnShortcut.file.getAbsolutePath();
-                incomingShortcutUuid = gnShortcut.getExtra("uuid");
-                incomingContainerId = gnShortcut.container.id;
-                Log.d(TAG, "GameNative launch (onNewIntent) resolved to shortcut: " + incomingShortcutPath);
-            }
-        }
-
         setIntent(intent);
         launchedFromPinnedShortcut = isPinnedShortcutLaunchIntent(intent);
 
@@ -1996,26 +1975,6 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
             if (dataPath != null && !dataPath.isEmpty()) {
                 shortcutPath = dataPath;
                 Log.d(TAG, "Resolved shortcut path from VIEW data: " + shortcutPath);
-            }
-        }
-
-        // GameNative frontend launch (Beacon, etc.): action app.gamenative.LAUNCH_GAME
-        // or gamenative://run?appid=..&gamesource=.. — resolve by store app id to the
-        // matching shortcut and let the normal launch pipeline take it from there.
-        if (isGameNativeLaunchIntent(getIntent())) {
-            Log.d(TAG, "GameNative launch intent: action=" + getIntent().getAction()
-                    + " data=" + getIntent().getDataString()
-                    + " app_id=" + getIntent().getIntExtra(GN_EXTRA_APP_ID, -1)
-                    + " game_source=" + getIntent().getStringExtra(GN_EXTRA_GAME_SOURCE));
-            Shortcut gnShortcut = resolveGameNativeLaunch(getIntent());
-            if (gnShortcut != null) {
-                shortcutUuid = gnShortcut.getExtra("uuid");
-                shortcutPath = gnShortcut.file.getAbsolutePath();
-                containerId = gnShortcut.container.id;
-                shortcutPathHash = shortcutPath.hashCode();
-                Log.d(TAG, "GameNative launch resolved to shortcut: " + shortcutPath);
-            } else {
-                Log.w(TAG, "GameNative launch intent received but no matching shortcut found; falling through");
             }
         }
 
@@ -2770,79 +2729,6 @@ public class XServerDisplayActivity extends FixedFontScaleAppCompatActivity
             Log.e("XServerDisplayActivity", "Failed to resolve shortcut by absolute path", e);
         }
         return null;
-    }
-
-    /**
-     * Resolve the GameNative frontend launch protocol (action app.gamenative.LAUNCH_GAME
-     * or gamenative://run?appid=..&gamesource=..) into a Shortcut, or null if the intent
-     * isn't a GameNative launch or no shortcut matches the requested app.
-     */
-    @Nullable
-    private Shortcut resolveGameNativeLaunch(@NonNull Intent intent) {
-        String gameSource = null;
-        int gameId = 0;
-
-        if (GN_ACTION_LAUNCH_GAME.equals(intent.getAction())) {
-            gameId = intent.getIntExtra(GN_EXTRA_APP_ID, 0);
-            gameSource = intent.getStringExtra(GN_EXTRA_GAME_SOURCE);
-        } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-            android.net.Uri data = intent.getData();
-            if (data != null
-                    && GN_URI_SCHEME.equalsIgnoreCase(data.getScheme())
-                    && GN_URI_HOST.equalsIgnoreCase(data.getHost())) {
-                String appid = data.getQueryParameter("appid");
-                if (appid != null) {
-                    try {
-                        gameId = Integer.parseInt(appid);
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-                gameSource = data.getQueryParameter("gamesource");
-            }
-        }
-
-        if (gameId <= 0 || gameSource == null || gameSource.isEmpty()) return null;
-
-        String normalizedSource = gameSource.toUpperCase(Locale.ROOT);
-        String normalizedAppId = String.valueOf(gameId);
-        Log.d(TAG, "GameNative launch: game_source=" + normalizedSource + " app_id=" + normalizedAppId);
-
-        try {
-            for (Shortcut sc : containerManager.loadShortcuts()) {
-                String source = sc.getExtra("game_source");
-                if (source == null || !source.equalsIgnoreCase(normalizedSource)) continue;
-
-                // Store games carry app_id; custom games carry custom_game_folder + uuid.
-                String appIdExtra = sc.getExtra("app_id");
-                if (appIdExtra != null && appIdExtra.equals(normalizedAppId)) {
-                    Log.d(TAG, "Resolved GameNative launch to shortcut: " + sc.file.getAbsolutePath());
-                    return sc;
-                }
-            }
-            // Custom games have no app_id; fall back to matching the uuid that
-            // FrontendExporter persists for the game (frontends send that as app_id).
-            for (Shortcut sc : containerManager.loadShortcuts()) {
-                String source = sc.getExtra("game_source");
-                if (source == null || !source.equalsIgnoreCase(normalizedSource)) continue;
-                if (normalizedAppId.equals(sc.getExtra("uuid"))) {
-                    Log.d(TAG, "Resolved GameNative custom launch to shortcut: " + sc.file.getAbsolutePath());
-                    return sc;
-                }
-            }
-        } catch (Exception e) {
-            Log.e("XServerDisplayActivity", "Failed to resolve GameNative launch target", e);
-        }
-        return null;
-    }
-
-    /** True when the intent is a GameNative frontend launch (action or gamenative://run URI). */
-    private boolean isGameNativeLaunchIntent(@NonNull Intent intent) {
-        if (GN_ACTION_LAUNCH_GAME.equals(intent.getAction())) return true;
-        if (!Intent.ACTION_VIEW.equals(intent.getAction())) return false;
-        android.net.Uri data = intent.getData();
-        return data != null
-                && GN_URI_SCHEME.equalsIgnoreCase(data.getScheme())
-                && GN_URI_HOST.equalsIgnoreCase(data.getHost());
     }
 
     private void disableUnavailablePinnedShortcut(int containerId, @Nullable String shortcutUuid, @Nullable String shortcutPath, int shortcutPathHash) {
