@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.util.Log;
 import androidx.preference.PreferenceManager;
 import com.winlator.cmod.app.config.SettingsConfig;
+import com.winlator.cmod.feature.library.LosslessAutoImport;
 import com.winlator.cmod.runtime.container.ContainerManager;
 import com.winlator.cmod.runtime.container.Shortcut;
 import com.winlator.cmod.shared.io.FileUtils;
@@ -16,6 +17,11 @@ import java.util.Locale;
 /** Writes shortcuts as standalone .desktop files (plus icon) into the configured export folder. */
 public final class FrontendExporter {
   private static final String TAG = "FrontendExporter";
+
+  /** Extensions of every file this exporter (or a previous version of it) writes. */
+  private static final String[] GENERATED_EXTENSIONS = {
+    ".desktop", ".png", ".steam", ".steamappid", ".epic", ".gog"
+  };
 
   private FrontendExporter() {}
 
@@ -98,6 +104,7 @@ public final class FrontendExporter {
   public static int exportAll(Context context) {
     File dir = resolveExportDir(context);
     if (dir == null) return 0;
+    clearExportedFiles(dir);
     ArrayList<Shortcut> shortcuts;
     try {
       shortcuts = new ContainerManager(context).loadShortcuts();
@@ -107,12 +114,48 @@ public final class FrontendExporter {
     }
     int count = 0;
     for (Shortcut shortcut : shortcuts) {
+      if (isExcludedFromExport(shortcut.getExtra("game_source"), shortcut.getExtra("app_id"))) {
+        continue;
+      }
       String exportName = shortcut.getExtra("frontend_export_name");
       if (exportName == null || exportName.isEmpty()) exportName = shortcut.getExtra("custom_name");
       String displayName = (exportName != null && !exportName.isEmpty()) ? exportName : null;
       if (exportOne(context, shortcut, dir, displayName) != null) count++;
     }
     return count;
+  }
+
+  /**
+   * Deletes every previously exported file (matching {@link #GENERATED_EXTENSIONS}) from the
+   * export folder, so a fresh {@link #exportAll} leaves no stale files behind when a shortcut was
+   * renamed or removed. Unrelated files and subdirectories are left untouched. Returns the number
+   * of files deleted.
+   */
+  static int clearExportedFiles(File dir) {
+    if (dir == null) return 0;
+    File[] files = dir.listFiles();
+    if (files == null) return 0;
+    int deleted = 0;
+    for (File file : files) {
+      if (file.isFile() && isGeneratedExportFile(file.getName()) && file.delete()) deleted++;
+    }
+    return deleted;
+  }
+
+  /** True when {@code fileName} looks like a file this exporter generates. */
+  static boolean isGeneratedExportFile(String fileName) {
+    if (fileName == null) return false;
+    String lower = fileName.toLowerCase(Locale.ROOT);
+    for (String extension : GENERATED_EXTENSIONS) {
+      if (lower.endsWith(extension)) return true;
+    }
+    return false;
+  }
+
+  /** True for utility entries that should never appear as frontend shortcuts (Lossless Scaling). */
+  static boolean isExcludedFromExport(String gameSource, String gameId) {
+    return "STEAM".equalsIgnoreCase(gameSource)
+        && String.valueOf(LosslessAutoImport.STEAM_APP_ID).equals(gameId);
   }
 
   private static String sanitizeFileName(String name) {
