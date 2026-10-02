@@ -517,7 +517,7 @@ internal suspend fun SteamService.Companion.fetchLatestSteamAppInfo(appId: Int):
                             JSONObject(tj)
                                 .optJSONObject("appTokens")
                                 ?.optString(appId.toString())
-                                ?.toLongOrNull()
+                                ?.let { parseSteamAccessToken(it) }
                         }
                     }.getOrNull() ?: 0L
                 session.getPicsAppInfo(appId, token)?.let { json ->

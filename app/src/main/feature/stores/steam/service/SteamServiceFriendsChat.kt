@@ -349,7 +349,7 @@ internal fun SteamService.PICSChangesCheck() {
                         if (tokJson != null) {
                             JSONObject(tokJson).optJSONObject("packageTokens")?.let { pt ->
                                 for (k in pt.keys()) {
-                                    tokens[k.toInt()] = pt.getString(k).toLongOrNull() ?: 0L
+                                    tokens[k.toInt()] = parseSteamAccessToken(pt.getString(k))
                                 }
                             }
                         }
@@ -510,7 +510,7 @@ internal fun SteamService.continuousPICSGetProductInfo(): Job =
                         if (tokJson != null) {
                             JSONObject(tokJson).optJSONObject("appTokens")?.let { at ->
                                 for (k in at.keys()) {
-                                    tokens[k.toInt()] = at.getString(k).toLongOrNull() ?: 0L
+                                    tokens[k.toInt()] = parseSteamAccessToken(at.getString(k))
                                 }
                             }
                         }
@@ -558,7 +558,7 @@ internal fun SteamService.healCorruptManifestDownloadSizes(): Job =
                 withContext(Dispatchers.IO) { session.getPicsAccessTokens(corruptAppIds, emptyList()) }
             }?.let { tokJson ->
                 JSONObject(tokJson).optJSONObject("appTokens")?.let { at ->
-                    for (k in at.keys()) tokenMap[k.toInt()] = at.getString(k).toLongOrNull() ?: 0L
+                    for (k in at.keys()) tokenMap[k.toInt()] = parseSteamAccessToken(at.getString(k))
                 }
             }
         }.onFailure { e -> Timber.w(e, "heal: access-token fetch failed; trying public appinfo") }

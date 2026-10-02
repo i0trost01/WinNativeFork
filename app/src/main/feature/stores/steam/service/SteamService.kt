@@ -3944,7 +3944,7 @@ class SteamService : Service() {
                     for (k in at.keys()) {
                         val id = k.toIntOrNull() ?: continue
                         if (id in dlcAppIds) {
-                            tokenMap[id] = at.getString(k).toLongOrNull() ?: 0L
+                            tokenMap[id] = parseSteamAccessToken(at.getString(k))
                         }
                     }
                 }
